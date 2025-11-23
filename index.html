@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Cash Memo</title>
+    <!-- ফন্ট -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- লাইব্রেরি -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        /* বেসিক স্টাইল */
+        body {
+            font-family: 'Hind Siliguri', 'Roboto', sans-serif;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 10px;
+            padding-bottom: 80px;
+        }
+
+        /* ---- ভাষা বাটন ---- */
+        .lang-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px; }
+        .lang-btn { padding: 6px 15px; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 13px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: white; }
+        .btn-bn { background: #00796b; }
+        .btn-en { background: #d32f2f; }
+
+        /* ---- স্লাইডার ---- */
+        .slider-container {
+            width: 100%; height: 160px; overflow: hidden; border-radius: 8px;
+            margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); position: relative; background: #fff;
+        }
+        .slider-wrapper { display: flex; width: 100%; height: 100%; transition: transform 0.5s ease-in-out; }
+        .slide-img { min-width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* ---- ড্যাশবোর্ড ---- */
+        .dashboard {
+            background: #fff; padding: 10px; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 15px;
+            border-top: 4px solid #d32f2f;
+        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; color: #333; }
+        
+        #inputForm, #bannerForm { display: none; background: #f1f5f9; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #ddd; }
+        .row { display: flex; gap: 5px; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-weight: 600; }
+
+        /* বাটন */
+        .btn-main { background: #007bff; color: white; padding: 10px; width: 100%; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+        .btn-save { background: #28a745; color: white; border: none; padding: 8px; border-radius: 4px; width: 100%; cursor: pointer; }
+        .btn-view { background: #17a2b8; color: white; padding: 10px; width: 100%; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 5px; }
+        .btn-banner { background: #6610f2; color: white; padding: 10px; width: 100%; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+
+        /* গ্রিড (সোনালী) */
+        .grid-box { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 10px; }
+        .item-box {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+            color: #000; padding: 15px 5px; border-radius: 8px; text-align: center;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); position: relative;
+            border: 1px solid #eec000;
+        }
+        .item-box:active { transform: scale(0.95); }
+        .item-name { display: block; font-size: 20px; font-weight: 800; margin-bottom: 5px; }
+        .item-price { font-size: 15px; font-weight: bold; background: rgba(255,255,255,0.4); padding: 2px 8px; border-radius: 10px; }
+        .del-badge { position: absolute; top: -8px; right: -8px; background: red; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; line-height: 20px; display: none; border: 2px solid white; }
+
+        #savedListArea { display: none; margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px; }
+        .saved-item { background: #f8f9fa; border: 1px solid #bbb; padding: 10px; margin-bottom: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+
+        /* ---- মেমো ডিজাইন ---- */
+        .paper {
+            background: #fff; max-width: 100%; margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); border: 1px solid #888;
+            position: relative; padding-bottom: 20px;
+        }
+
+        .memo-header { background: linear-gradient(to bottom, #fffde7, #fff9c4); padding: 15px; text-align: center; border-bottom: 3px solid #fbc02d; }
+        .bismillah { font-size: 12px; color: #000; margin-bottom: 5px; }
+        .title-head { font-size: 28px; font-weight: 800; color: #d32f2f; text-shadow: 1px 1px 0px #fff; margin: 5px 0; line-height: 1.2; }
+        .prop-box { background: #2e7d32; color: white; padding: 2px 15px; border-radius: 15px; font-size: 12px; display: inline-block; margin-bottom: 5px; }
+        .address-strip { background: #fdd835; color: black; width: 100%; padding: 3px 0; font-weight: bold; font-size: 13px; margin-top: 5px; }
+
+        .info-sec { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; background: #fff; font-size: 13px; font-weight: bold;}
+        .cust-line { padding: 0 10px 10px 10px; display: flex; align-items: center; }
+        .cust-input { border: none; border-bottom: 1px dotted #000; width: 100%; outline: none; font-weight: bold; font-family: inherit; font-size: 14px; margin-left: 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { background-color: #c2185b; color: white; padding: 6px; font-size: 13px; border: 1px solid #880e4f; text-align: center; }
+        td { border: 1px solid #888; padding: 6px; text-align: center; font-size: 13px; color: black; font-weight: 600; }
+
+        .col-desc { background-color: #fffde7; text-align: left !important; padding-left: 5px !important; }
+        .col-qty { background-color: #fce4ec; } .col-rate { background-color: #e3f2fd; } .col-total { background-color: #e0f2f1; }
+
+        .footer-area { display: flex; justify-content: space-between; padding: 15px; align-items: flex-end; }
+        .words-area { width: 55%; font-size: 12px; border-bottom: 1px dotted #000; margin-bottom: 20px; }
+        
+        .calc-table { width: 40%; border-collapse: collapse; }
+        .calc-table td { padding: 4px; font-weight: bold; font-size: 13px; border: 1px solid #888; }
+        
+        .bg-blue { background: #1976d2; color: white; text-align: center; }
+        .bg-pink { background: #d81b60; color: white; text-align: center; }
+        .bg-green { background: #388e3c; color: white; text-align: center; }
+        .amount-box { background: #fff; text-align: right; padding-right: 5px; }
+        .footer-input { width: 100%; border: none; background: transparent; text-align: right; font-weight: bold; font-size: 14px; outline: none; color: #000; }
+
+        .sign-area { text-align: center; margin-top: 20px; position: relative; width: 120px; margin-left: auto; margin-right: 10px; }
+        #signCanvas { width: 100%; height: 50px; cursor: crosshair; display: block; background: transparent; }
+        .sign-line { border-top: 2px solid #000; display: block; width: 100%; margin-top: -5px; font-size: 12px; font-weight: bold; padding-top: 5px; }
+        .clear-sign-btn { position: absolute; top: -10px; right: -10px; background: red; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; line-height: 18px; text-align: center; cursor: pointer; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+        .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.2); gap: 5px; z-index: 999; }
+        .btn-web { flex: 1; background: #ff9800; color: white; padding: 10px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-p { flex: 1; background: #6f42c1; color: white; padding: 10px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-pdf { flex: 1; background: #00897b; color: white; padding: 10px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-n { flex: 1; background: #dc3545; color: white; padding: 10px 5px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 11px; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .dashboard, .bottom-bar, .lang-bar, .del-badge, .slider-container, .data-html2canvas-ignore, .clear-sign-btn { display: none !important; }
+            .paper { box-shadow: none; border: none; padding: 0; margin: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ভাষা বাটন -->
+    <div class="lang-bar data-html2canvas-ignore">
+        <button class="lang-btn btn-bn" onclick="setLang('bn')">🇧🇩 বাংলা</button>
+        <button class="lang-btn btn-en" onclick="setLang('en')">🇺🇸 English</button>
+    </div>
+
+    <!-- স্লাইডার -->
+    <div class="slider-container data-html2canvas-ignore">
+        <div class="slider-wrapper" id="sliderWrapper">
+            <img src="" class="slide-img" id="slide1" alt="Banner 1">
+            <img src="" class="slide-img" id="slide2" alt="Banner 2">
+            <img src="" class="slide-img" id="slide3" alt="Banner 3">
+        </div>
+    </div>
+
+    <!-- ড্যাশবোর্ড -->
+    <div class="dashboard data-html2canvas-ignore">
+        <div class="panel-header">
+            <span id="txtPanelTitle">ক্যাশ মেমো</span>
+            <span style="color:red; font-size:12px; text-decoration:underline; cursor:pointer;" onclick="toggleDel()" id="txtDelMode">ডিলিট মোড</span>
+        </div>
+        
+        <button class="btn-banner" onclick="toggleBannerForm()" id="btnBannerSet">🖼️ ব্যানার সেটিং</button>
+        <div id="bannerForm">
+            <h4 style="margin-top:0; text-align:center;" id="txtBannerHead">ছবির লিংক বসান</h4>
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <input type="text" id="url1" placeholder="Link 1...">
+                <input type="text" id="url2" placeholder="Link 2...">
+                <input type="text" id="url3" placeholder="Link 3...">
+                <button class="btn-save" onclick="saveBanners()" id="btnSaveBanner">ব্যানার সেভ করুন</button>
+            </div>
+        </div>
+
+        <button class="btn-view" onclick="toggleSavedList()" id="btnViewList">📜 সেভ করা মেমো দেখুন</button>
+        <div id="savedListArea">
+            <div id="historyContainer"></div>
+        </div>
+
+        <button class="btn-main" onclick="openForm()" id="btnAddProd"> + পণ্য অ্যাড করুন</button>
+        <div id="inputForm">
+            <div class="row">
+                <input type="text" id="dbName" placeholder="পণ্যের নাম">
+                <select id="dbUnit">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+            <div class="row">
+                <input type="number" id="dbPrice" placeholder="দাম">
+                <button class="btn-save" onclick="saveData()" id="btnSaveDB">সেভ করুন</button>
+            </div>
+            <small style="color:#666; font-size:11px;" id="txtNote">* গ্রাম/মিলি হলে ১ কেজি/লিটার এর দাম লিখুন।</small>
+        </div>
+
+        <div class="grid-box" id="gridArea"></div>
+    </div>
+
+    <!-- মেমো পেপার -->
+    <div class="paper" id="printArea">
+        <div class="memo-header">
+            <div class="bismillah" id="txtBism">বিসমিল্লাহির রাহমানির রাহিম</div>
+            <div class="title-head" contenteditable="true" id="txtShopName">ক্যাশ মেমো</div>
+            <div class="prop-box" contenteditable="true" id="txtProp">প্রোঃ মোঃ আপনার নাম</div>
+            <div class="address-strip" contenteditable="true" id="txtAddr">দোকানের ঠিকানা: কলেজ রোড, ঢাকা</div>
+        </div>
+
+        <div class="info-sec">
+            <span><span id="lblMemoNo">মেমো নং</span>: <span id="mNo"></span></span>
+            <span><span id="lblDate">তারিখ</span>: <span id="mDate"></span></span>
+        </div>
+        <div class="cust-line">
+            <span id="lblCustName">নাম:</span>
+            <input type="text" class="cust-input" id="inpCustName" placeholder="কাস্টমারের নাম...">
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="40%" id="thDesc">বিবরণ</th>
+                    <th width="15%" id="thQty">পরিমাণ</th>
+                    <th width="15%" id="thUnit">একক</th>
+                    <th width="15%" id="thRate">দর</th>
+                    <th width="15%" id="thTotal">টাকা</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+
+        <div class="footer-area">
+            <div style="width:55%">
+                <div class="words-area"><span id="lblWords">কথায়</span>: <span id="inWords"></span></div>
+                <div class="sign-area">
+                    <canvas id="signCanvas" width="120" height="50"></canvas>
+                    <div class="clear-sign-btn data-html2canvas-ignore" onclick="clearSignature()">X</div>
+                    <div class="sign-line" id="lblSign">স্বাক্ষর</div>
+                </div>
+            </div>
+
+            <table class="calc-table">
+                <tr>
+                    <td class="bg-blue" id="lblTotal">মোট</td>
+                    <td class="amount-box" id="grandTotal">0.00</td>
+                </tr>
+                <tr>
+                    <td class="bg-pink" id="lblPaid">জমা</td>
+                    <td class="amount-box">
+                        <input type="number" id="tablePaid" class="footer-input" placeholder="">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="bg-green" id="lblDue">বাকি</td>
+                    <td class="amount-box">
+                        <input type="number" id="tableDue" class="footer-input" placeholder="">
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div style="text-align:center; font-size:11px; margin-bottom:5px; font-style:italic;" id="txtFooterMsg">* বিক্রিত মাল ফেরত নেওয়া হয় না *</div>
+    </div>
+
+    <!-- বাটন বার -->
+    <div class="bottom-bar data-html2canvas-ignore">
+        <button class="btn-web" onclick="saveToWebsite()" id="btnWeb">সেভ (Web)</button>
+        <button class="btn-p" onclick="downloadImage()" id="btnGal">গ্যালারি</button>
+        <button class="btn-pdf" onclick="downloadPDF()">PDF</button>
+        <button class="btn-n" onclick="resetMemo()" id="btnNew">নতুন</button>
+    </div>
+
+    <script>
+        // ---- ভাষা ডাটাবেস ----
+        let currentLang = 'bn';
+        
+        const langData = {
+            bn: {
+                panelTitle: 'ক্যাশ মেমো', delMode: 'ডিলিট মোড', bannerSet: '🖼️ ব্যানার সেটিং', bannerHead: 'ছবির লিংক বসান',
+                saveBanner: 'ব্যানার সেভ করুন', viewList: '📜 সেভ করা মেমো দেখুন', addProd: '+ পণ্য অ্যাড করুন',
+                prodPh: 'পণ্যের নাম', pricePh: 'দাম (দর)', saveDB: 'সেভ করুন',
+                note: '* গ্রাম/মিলি হলে ১ কেজি বা ১ লিটারের দাম লিখুন।',
+                bism: 'বিসমিল্লাহির রাহমানির রাহিম', shopName: 'ক্যাশ মেমো', prop: 'প্রোঃ মোঃ আপনার নাম', addr: 'দোকানের ঠিকানা: কলেজ রোড, ঢাকা',
+                memoNo: 'মেমো নং', date: 'তারিখ', custName: 'নাম:', custPh: 'কাস্টমারের নাম...',
+                desc: 'বিবরণ', qty: 'পরিমাণ', unit: 'একক', rate: 'দর', total: 'টাকা',
+                words: 'কথায়', sign: 'স্বাক্ষর', totalLbl: 'মোট', paid: 'জমা', due: 'বাকি',
+                footerMsg: '* বিক্রিত মাল ফেরত নেওয়া হয় না *',
+                btnWeb: 'সেভ (Web)', btnGal: 'গ্যালারি', btnNew: 'নতুন',
+                confirmDel: 'মুছতে চান?', promptQty: 'কতটুকু?', alertEmpty: 'মেমো খালি!', alertSave: 'সেভ হয়েছে!',
+                units: ["কেজি", "গ্রাম", "মিলি", "পিস", "লিটার", "ডজন", "হালি", "প্যাকেট", "বক্স"]
+            },
+            en: {
+                panelTitle: 'cash memo', delMode: 'Delete Mode', bannerSet: '🖼️ Banner Settings', bannerHead: 'Enter Image Links',
+                saveBanner: 'Save Banners', viewList: '📜 View Saved Memos', addProd: '+ Add Product',
+                prodPh: 'Product Name', pricePh: 'Price (Rate)', saveDB: 'Save',
+                note: '* For Gram/ML, enter price of 1 KG or 1 Liter.',
+                bism: 'Bismillahir Rahmanir Rahim', shopName: 'CASH MEMO HEADLINE', prop: 'Prop: Md. Your Name', addr: 'Address: College Road, Dhaka',
+                memoNo: 'Memo No', date: 'Date', custName: 'Name:', custPh: 'Customer Name...',
+                desc: 'Description', qty: 'Qty', unit: 'Unit', rate: 'Rate', total: 'Amount',
+                words: 'In Words', sign: 'Signature', totalLbl: 'Total', paid: 'Paid', due: 'Due',
+                footerMsg: '* Goods once sold are not returnable *',
+                btnWeb: 'Save (Web)', btnGal: 'Gallery', btnNew: 'New',
+                confirmDel: 'Delete this?', promptQty: 'Quantity?', alertEmpty: 'Memo is empty!', alertSave: 'Saved Successfully!',
+                units: ["Kg", "Gm", "Ml", "Pcs", "Ltr", "Dzn", "Hali", "Pkt", "Box"]
+            }
+        };
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = langData[lang];
+
+            // ড্যাশবোর্ড
+            document.getElementById('txtPanelTitle').innerText = t.panelTitle;
+            document.getElementById('txtDelMode').innerText = t.delMode;
+            document.getElementById('btnBannerSet').innerText = t.bannerSet;
+            document.getElementById('txtBannerHead').innerText = t.bannerHead;
+            document.getElementById('btnSaveBanner').innerText = t.saveBanner;
+            document.getElementById('btnViewList').innerText = t.viewList;
+            document.getElementById('btnAddProd').innerText = t.addProd;
+            document.getElementById('dbName').placeholder = t.prodPh;
+            document.getElementById('dbPrice').placeholder = t.pricePh;
+            document.getElementById('btnSaveDB').innerText = t.saveDB;
+            document.getElementById('txtNote').innerText = t.note;
+
+            // ড্রপডাউন আপডেট
+            const sel = document.getElementById('dbUnit');
+            sel.innerHTML = '';
+            t.units.forEach(u => {
+                let op = document.createElement('option');
+                op.value = u; op.innerText = u;
+                sel.appendChild(op);
+            });
+
+            // মেমো
+            document.getElementById('txtBism').innerText = t.bism;
+            document.getElementById('lblMemoNo').innerText = t.memoNo;
+            document.getElementById('lblDate').innerText = t.date;
+            document.getElementById('lblCustName').innerText = t.custName;
+            document.getElementById('inpCustName').placeholder = t.custPh;
+
+            document.getElementById('thDesc').innerText = t.desc;
+            document.getElementById('thQty').innerText = t.qty;
+            document.getElementById('thUnit').innerText = t.unit;
+            document.getElementById('thRate').innerText = t.rate;
+            document.getElementById('thTotal').innerText = t.total;
+
+            document.getElementById('lblWords').innerText = t.words;
+            document.getElementById('lblSign').innerText = t.sign;
+            document.getElementById('lblTotal').innerText = t.totalLbl;
+            document.getElementById('lblPaid').innerText = t.paid;
+            document.getElementById('lblDue').innerText = t.due;
+            document.getElementById('txtFooterMsg').innerText = t.footerMsg;
+
+            document.getElementById('btnWeb').innerText = t.btnWeb;
+            document.getElementById('btnGal').innerText = t.btnGal;
+            document.getElementById('btnNew').innerText = t.btnNew;
+            
+            // হেডারগুলো ডিফল্ট থাকলে চেঞ্জ হবে, এডিট করা থাকলে হবে না
+            if(document.getElementById('txtShopName').innerText.includes('HEADLINE') || document.getElementById('txtShopName').innerText.includes('হেডলাইন')) {
+                 document.getElementById('txtShopName').innerText = t.shopName;
+            }
+        }
+
+
+        // ---- স্বাক্ষর ----
+        const canvas = document.getElementById('signCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        canvas.addEventListener('mousedown', () => drawing = true);
+        canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+        canvas.addEventListener('mousemove', draw);
+        
+        canvas.addEventListener('touchstart', (e) => { drawing = true; e.preventDefault(); });
+        canvas.addEventListener('touchend', (e) => { drawing = false; ctx.beginPath(); e.preventDefault(); });
+        canvas.addEventListener('touchmove', drawTouch);
+
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke(); ctx.beginPath();
+            ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+        function drawTouch(e) {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+            ctx.stroke(); ctx.beginPath();
+            ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        }
+        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        // ---- স্লাইডার ----
+        const defaultBanners = [
+            "https://i.ibb.co/wFDBHjZs/1000026072.jpg",
+            "https://i.ibb.co/jPcMDZhT/1000026069.jpg",
+            "https://i.ibb.co/277Jb56B/1000025987.jpg"
+        ];
+        function loadBanners() {
+            let saved = JSON.parse(localStorage.getItem('mk_banners')) || defaultBanners;
+            document.getElementById('slide1').src = saved[0];
+            document.getElementById('slide2').src = saved[1];
+            document.getElementById('slide3').src = saved[2];
+            document.getElementById('url1').value = saved[0];
+            document.getElementById('url2').value = saved[1];
+            document.getElementById('url3').value = saved[2];
+        }
+        function toggleBannerForm() {
+            let f = document.getElementById('bannerForm');
+            f.style.display = (f.style.display === 'block') ? 'none' : 'block';
+        }
+        function saveBanners() {
+            let u1 = document.getElementById('url1').value || defaultBanners[0];
+            let u2 = document.getElementById('url2').value || defaultBanners[1];
+            let u3 = document.getElementById('url3').value || defaultBanners[2];
+            localStorage.setItem('mk_banners', JSON.stringify([u1, u2, u3]));
+            loadBanners();
+            alert(langData[currentLang].alertSave);
+            toggleBannerForm();
+        }
+        let slideIndex = 0;
+        const wrapper = document.getElementById('sliderWrapper');
+        function startSlider() {
+            setInterval(() => {
+                slideIndex++;
+                if (slideIndex >= 3) { slideIndex = 0; }
+                wrapper.style.transform = `translateX(-${slideIndex * 100}%)`;
+            }, 3000);
+        }
+        startSlider();
+
+        // ---- মেইন লজিক ----
+        let db = JSON.parse(localStorage.getItem('mk_smart_db_v1')) || [];
+        let savedMemos = JSON.parse(localStorage.getItem('mk_saved_memos_smart')) || [];
+        let cart = [];
+        let delMode = false;
+
+        window.onload = function() {
+            setLang('bn'); // ডিফল্ট বাংলা
+            loadBanners();
+            loadGrid();
+            updateInfo();
+            loadHistory();
+        };
+
+        function openForm() {
+            let f = document.getElementById('inputForm');
+            f.style.display = (f.style.display === 'block') ? 'none' : 'block';
+        }
+        function saveData() {
+            let n = document.getElementById('dbName').value;
+            let p = document.getElementById('dbPrice').value;
+            let u = document.getElementById('dbUnit').value;
+            if(!n || !p) return alert('Error');
+            db.push({ name: n, price: p, unit: u });
+            localStorage.setItem('mk_smart_db_v1', JSON.stringify(db));
+            loadGrid();
+            document.getElementById('dbName').value = '';
+            document.getElementById('dbPrice').value = '';
+            openForm();
+        }
+        function loadGrid() {
+            let g = document.getElementById('gridArea');
+            g.innerHTML = '';
+            if(db.length === 0) g.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#777;">...</div>';
+            db.forEach((i, idx) => {
+                let div = document.createElement('div');
+                div.className = 'item-box';
+                div.innerHTML = `<div class="del-badge" onclick="remDB(event, ${idx})">X</div>
+                                 <span class="item-name">${i.name}</span>
+                                 <span class="item-price">${i.price}</span>`;
+                div.onclick = (e) => { if(!e.target.classList.contains('del-badge')) addToCart(idx); };
+                g.appendChild(div);
+            });
+            document.querySelectorAll('.del-badge').forEach(b => b.style.display = delMode ? 'block' : 'none');
+        }
+        function toggleDel() { delMode = !delMode; loadGrid(); }
+        function remDB(e, i) {
+            e.stopPropagation();
+            if(confirm(langData[currentLang].confirmDel)) {
+                db.splice(i, 1);
+                localStorage.setItem('mk_smart_db_v1', JSON.stringify(db));
+                loadGrid();
+            }
+        }
+
+        function addToCart(idx) {
+            let item = db[idx];
+            let q = prompt(langData[currentLang].promptQty, 1);
+            if(q && q > 0) {
+                let quantity = parseFloat(q);
+                let totalPrice = 0;
+                // স্মার্ট ক্যালকুলেশন
+                if (['গ্রাম', 'মিলি', 'Gm', 'Ml'].includes(item.unit)) {
+                    totalPrice = (item.price / 1000) * quantity;
+                } else {
+                    totalPrice = item.price * quantity;
+                }
+                cart.push({ name: item.name, unit: item.unit, qty: quantity, price: item.price, total: totalPrice });
+                render();
+            }
+        }
+
+        function render() {
+            let tb = document.getElementById('tbody');
+            tb.innerHTML = '';
+            let gt = 0;
+            cart.forEach((c, i) => {
+                gt += c.total;
+                tb.innerHTML += `
+                <tr onclick="askRem(${i})">
+                    <td class="col-desc">${c.name}</td>
+                    <td class="col-qty">${c.qty}</td>
+                    <td>${c.unit}</td>
+                    <td class="col-rate">${c.price}</td>
+                    <td class="col-total">${c.total.toFixed(2)}</td>
+                </tr>`;
+            });
+            for(let j=cart.length; j<5; j++) {
+                tb.innerHTML += `<tr><td class="col-desc">&nbsp;</td><td></td><td></td><td class="col-rate"></td><td class="col-total"></td></tr>`;
+            }
+            document.getElementById('grandTotal').innerText = gt.toFixed(2);
+        }
+
+        function askRem(i) { if(confirm(langData[currentLang].confirmDel)) { cart.splice(i, 1); render(); } }
+
+        function updateInfo() {
+            const d = new Date();
+            document.getElementById('mDate').innerText = d.toLocaleDateString('bn-BD');
+            document.getElementById('mNo').innerText = Math.floor(1000 + Math.random() * 9000);
+        }
+        function resetMemo() {
+            if(confirm('Reset?')) {
+                cart = []; 
+                document.getElementById('tablePaid').value = '';
+                document.getElementById('tableDue').value = '';
+                clearSignature(); 
+                render(); 
+                updateInfo();
+                document.querySelector('.cust-input').value = '';
+            }
+        }
+        function saveToWebsite() {
+            if(cart.length === 0) return alert(langData[currentLang].alertEmpty);
+            let memoData = {
+                no: document.getElementById('mNo').innerText,
+                date: document.getElementById('mDate').innerText,
+                cust: document.querySelector('.cust-input').value || '-',
+                items: cart,
+                total: document.getElementById('grandTotal').innerText
+            };
+            savedMemos.push(memoData);
+            localStorage.setItem('mk_saved_memos_smart', JSON.stringify(savedMemos));
+            alert(langData[currentLang].alertSave);
+            loadHistory();
+        }
+        function toggleSavedList() {
+            let area = document.getElementById('savedListArea');
+            area.style.display = (area.style.display === 'block') ? 'none' : 'block';
+        }
+        function loadHistory() {
+            let container = document.getElementById('historyContainer');
+            container.innerHTML = '';
+            if(savedMemos.length === 0) return container.innerHTML = '<p style="text-align:center;color:#777;">...</p>';
+            savedMemos.slice().reverse().forEach((m, i) => {
+                let originalIndex = savedMemos.length - 1 - i;
+                let div = document.createElement('div');
+                div.className = 'saved-item';
+                div.innerHTML = `
+                    <div onclick="restoreMemo(${originalIndex})" style="flex-grow:1;">
+                        <strong>#${m.no}</strong> - ${m.cust}<br>
+                        <small>${m.date} | Total: ${m.total}</small>
+                    </div>
+                    <button onclick="deleteHistory(${originalIndex})" style="background:red;color:white;border:none;padding:5px;">X</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        function restoreMemo(idx) {
+            let m = savedMemos[idx];
+            document.getElementById('mNo').innerText = m.no;
+            document.getElementById('mDate').innerText = m.date;
+            document.querySelector('.cust-input').value = m.cust;
+            cart = m.items || [];
+            render();
+            document.getElementById('savedListArea').style.display = 'none';
+        }
+        function deleteHistory(idx) {
+            if(confirm(langData[currentLang].confirmDel)) {
+                savedMemos.splice(idx, 1);
+                localStorage.setItem('mk_saved_memos_smart', JSON.stringify(savedMemos));
+                loadHistory();
+            }
+        }
+        
+        function downloadImage() {
+            const element = document.getElementById('printArea');
+            fixInputs(element);
+            html2canvas(element, { scale: 3, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'Memo.jpg';
+                link.href = canvas.toDataURL('image/jpeg', 1.0);
+                link.click();
+            });
+        }
+
+        async function downloadPDF() {
+            const element = document.getElementById('printArea');
+            fixInputs(element);
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, scrollY: 0, height: element.scrollHeight, windowHeight: element.scrollHeight });
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', [(canvas.height * 210) / canvas.width, 210]); 
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+            pdf.save('Memo.pdf');
+        }
+
+        function fixInputs(el) {
+            const inputs = el.querySelectorAll('input');
+            inputs.forEach(inp => inp.setAttribute('value', inp.value));
+        }
+    </script>
+</body>
+</html>
